@@ -35,10 +35,12 @@ for grid in root.iter('MyObjectBuilder_EntityBase'):
                         "Owner":owner,
                         "Item":item_name,
                         "Offer or Order":item_type,
-                        "Qty":quantity
+                        "Qty":quantity,
+                        "Price per unit":price_per_unit
                     }
                     )
 df = pd.DataFrame(rows)
+df.to_csv("test.csv")
 
 # for cube in root.iter('MyObjectBuilder_CubeBlock'):
 #     if cube.attrib['{http://www.w3.org/2001/XMLSchema-instance}type']=="MyObjectBuilder_StoreBlock":
