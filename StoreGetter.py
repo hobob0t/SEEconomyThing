@@ -9,6 +9,7 @@ Server = (root.find("SessionName").text)
 
 players = root.iter("MyObjectBuilder_Identity")
 
+'''Find all the IDs and players so we can change ID into player name later'''
 ids = []
 for player in players:
     ids.append(
