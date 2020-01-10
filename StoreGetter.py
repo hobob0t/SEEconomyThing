@@ -7,6 +7,20 @@ tree = ET.parse('save/Sandbox.sbc')
 root = tree.getroot()
 Server = (root.find("SessionName").text)
 
+players = root.iter("MyObjectBuilder_Identity")
+
+ids = []
+for player in players:
+    ids.append(
+        {
+            "Name":player.find("DisplayName").text,
+            "ID":player.find("IdentityId").text
+
+        }
+    )
+
+ids = pd.DataFrame(ids)
+
 '''Now parse the other save file for store data'''
 tree = ET.parse('save/SANDBOX_0_0_0_.sbs')
 root = tree.getroot()
@@ -29,7 +43,9 @@ for grid in root.iter('MyObjectBuilder_EntityBase'):
             #If the block is a store
             if cube.attrib['{http://www.w3.org/2001/XMLSchema-instance}type'] == "MyObjectBuilder_StoreBlock":
                 items = cube.find("PlayerItems").findall("MyObjectBuilder_StoreItem") #Get all the items
-                owner = cube.find("Owner").text #Get the items
+                owner = cube.find("Owner").text #Get the ID
+                owner = ids['Name'].loc[ids['ID']==owner].values[0]
+
                 for item in items:
                     item_name=item.find("Item").attrib["Subtype"] #The item name
                     item_type = item.find("StoreItemType").text #Offer or order
