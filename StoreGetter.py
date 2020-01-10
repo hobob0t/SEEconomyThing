@@ -44,6 +44,8 @@ for grid in root.iter('MyObjectBuilder_EntityBase'):
             if cube.attrib['{http://www.w3.org/2001/XMLSchema-instance}type'] == "MyObjectBuilder_StoreBlock":
                 items = cube.find("PlayerItems").findall("MyObjectBuilder_StoreItem") #Get all the items
                 owner = cube.find("Owner").text #Get the ID
+
+                #Lookup the ID and change it to a name
                 owner = ids['Name'].loc[ids['ID']==owner].values[0]
 
                 for item in items:
