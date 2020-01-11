@@ -51,44 +51,45 @@ def getStore(path):
         if grid.attrib['{http://www.w3.org/2001/XMLSchema-instance}type'] == "MyObjectBuilder_CubeGrid":
 
             grid_name = grid.find("DisplayName").text  # The grid name
-            blocks = grid.find("CubeBlocks")  # The blocks in the grid
+            # blocks = grid.find("CubeBlocks")  # The blocks in the
+
+            stores = grid.findall("CubeBlocks[@{http://www.w3.org/2001/XMLSchema-instance}type='MyObjectBuilder_CubeGrid']")
+
             position_data = grid.find("PositionAndOrientation").find("Position")  # The position of the grid
             x = position_data.attrib['x']
             y = position_data.attrib['y']
             z = position_data.attrib['z']
 
-            for cube in blocks:
-                # If the block is a store
-                if cube.attrib['{http://www.w3.org/2001/XMLSchema-instance}type'] == "MyObjectBuilder_StoreBlock":
-                    items = cube.find("PlayerItems").findall("MyObjectBuilder_StoreItem")  # Get all the items
-                    owner = cube.find("Owner").text  # Get the ID
+            for store in stores:
+                items = store.find("PlayerItems").findall("MyObjectBuilder_StoreItem")  # Get all the items
+                owner = store.find("Owner").text  # Get the ID
 
-                    # Lookup the ID and change it to a name
-                    owner = ids['Name'].loc[ids['ID'] == owner].values[0]
+                # Lookup the ID and change it to a name
+                owner = ids['Name'].loc[ids['ID'] == owner].values[0]
 
-                    for item in items:
+                for item in items:
 
 
-                        item_name = item.find("Item").attrib["Subtype"]  # The item name
-                        item_type = item.find("StoreItemType").text  # Offer or order
-                        price_per_unit = item.find("PricePerUnit").text  # Price per unit
-                        quantity = item.find("Amount").text  # Qty
+                    item_name = item.find("Item").attrib["Subtype"]  # The item name
+                    item_type = item.find("StoreItemType").text  # Offer or order
+                    price_per_unit = item.find("PricePerUnit").text  # Price per unit
+                    quantity = item.find("Amount").text  # Qty
 
 
-                        # This is a neat trick for making dataframes. It's a list of dictionaries
-                        rows.append({
-                            "Server": Server,
-                            "Grid Name": grid_name,
-                            "X": x,
-                            "Y": y,
-                            "Z": z,
-                            "Owner": owner,
-                            "Item": item_name,
-                            "Offer or Order": item_type,
-                            "Qty": quantity,
-                            "Price per unit": price_per_unit
-                        }
-                        )
+                    # This is a neat trick for making dataframes. It's a list of dictionaries
+                    rows.append({
+                        "Server": Server,
+                        "Grid Name": grid_name,
+                        "X": x,
+                        "Y": y,
+                        "Z": z,
+                        "Owner": owner,
+                        "Item": item_name,
+                        "Offer or Order": item_type,
+                        "Qty": quantity,
+                        "Price per unit": price_per_unit
+                    }
+                    )
     print(time.time() - start)
     return rows
 
