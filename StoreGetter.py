@@ -40,14 +40,13 @@ def getPlayers(path):
     return pd.DataFrame(ids)
 
 
-def serverSQL(serverName,conn,metadata):
+def serverSQL(serverName, conn, metadata):
     table = metadata.tables['servers']
     exists = table.select().where(table.c.servername == serverName)
     res = conn.execute(exists).scalar()
     if res is None:
         ins = table.insert().values(servername=serverName)
         conn.execute(ins)
-
 
 
 def getStore(path):
@@ -70,19 +69,16 @@ def getStore(path):
             # else:
             #     break
 
-            stores = grid.findall(".//MyObjectBuilder_CubeBlock[@xsi:type='MyObjectBuilder_StoreBlock']",namespaces)
+            stores = grid.findall(".//MyObjectBuilder_CubeBlock[@xsi:type='MyObjectBuilder_StoreBlock']", namespaces)
 
             position_data = grid.find("PositionAndOrientation").find("Position")  # The position of the grid
             x = position_data.attrib['x']
             y = position_data.attrib['y']
             z = position_data.attrib['z']
 
-
             for store in stores:
                 items = store.find("PlayerItems").findall("MyObjectBuilder_StoreItem")  # Get all the items
                 owner = store.find("Owner").text  # Get the ID
-
-
 
                 # Lookup the ID and change it to a name
                 owner = ids['Name'].loc[ids['ID'] == owner].values[0]
@@ -92,8 +88,6 @@ def getStore(path):
                     item_type = item.find("StoreItemType").text  # Offer or order
                     price_per_unit = item.find("PricePerUnit").text  # Price per unit
                     quantity = item.find("Amount").text  # Qty
-
-
 
                     # This is a neat trick for making dataframes. It's a list of dictionaries
                     rows.append({
@@ -107,10 +101,11 @@ def getStore(path):
                         "Offer or Order": item_type,
                         "Qty": quantity,
                         "Price per unit": price_per_unit,
-                        'GPS String': 'GPS:'+grid_name+':'+x+':'+y+':'+z+':'
+                        'GPS String': 'GPS:' + grid_name + ':' + x + ':' + y + ':' + z + ':'
                     }
                     )
     return rows
+
 
 while True:
     ls = os.listdir(".")
@@ -137,9 +132,7 @@ while True:
             metadata = MetaData()
             metadata.reflect(bind=engine)
 
-            serverSQL(Server,conn,metadata)
-
-
+            serverSQL(Server, conn, metadata)
 
             ids = getPlayers(latest_subdir)
             all_stores_data.append(getStore(latest_subdir))
@@ -147,28 +140,26 @@ while True:
     # Flatten the list
     flat_list = [item for sublist in all_stores_data for item in sublist]
 
-    if len(flat_list)>0:
-
+    if len(flat_list) > 0:
         # Make a dataframe
         df = pd.DataFrame(flat_list)
 
         dtypes = {
-                    "Server": types.TEXT,
-                    "Grid Name": types.TEXT,
-                    "X": types.FLOAT,
-                    "Y": types.FLOAT,
-                    "Z": types.FLOAT,
-                    "Owner": types.TEXT,
-                    "Item": types.TEXT,
-                    "Offer or Order": types.TEXT,
-                    "Qty": types.FLOAT,
-                    "Price per unit": types.FLOAT,
-                    'GPS String': types.TEXT
-                    }
+            "Server": types.TEXT,
+            "Grid Name": types.TEXT,
+            "X": types.FLOAT,
+            "Y": types.FLOAT,
+            "Z": types.FLOAT,
+            "Owner": types.TEXT,
+            "Item": types.TEXT,
+            "Offer or Order": types.TEXT,
+            "Qty": types.FLOAT,
+            "Price per unit": types.FLOAT,
+            'GPS String': types.TEXT
+        }
 
         # df.to_csv("test.csv")
-        df.to_sql('stores',con=engine,if_exists='replace',dtype=dtypes,chunksize=1000,method = 'multi')
-
+        df.to_sql('stores', con=engine, if_exists='replace', dtype=dtypes, chunksize=1000, method='multi')
 
     conn.close()
     engine.dispose()
