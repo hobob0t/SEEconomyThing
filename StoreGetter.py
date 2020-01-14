@@ -111,7 +111,7 @@ password = input("type password for db and press return or enter.")
 while True:
     ls = os.listdir(".")
     all_stores_data = []
-    engine = create_engine('mysql://remote:{}@128.120.151.58:27000/economy'.format(password))
+    engine = create_engine('mysql://remote:{}@localhost:27000/economy?ssl=true'.format(password))#128.120.151.58
     conn = engine.connect()
     metadata = MetaData()
     metadata.reflect(bind=engine)
@@ -130,9 +130,7 @@ while True:
             print("Processing save files in {}".format(latest_subdir))
 
             Server = serverName(latest_subdir)
-
             serverSQL(Server, conn, metadata)
-
             ids = getPlayers(latest_subdir)
             all_stores_data.append(getStore(latest_subdir))
 
