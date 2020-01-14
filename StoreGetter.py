@@ -106,6 +106,7 @@ def getStore(path):
                     )
     return rows
 
+password = input("type password for db and press return or enter.")
 
 while True:
     ls = os.listdir(".")
@@ -127,7 +128,7 @@ while True:
 
             Server = serverName(latest_subdir)
 
-            engine = create_engine('mysql://remote:ghidra@128.120.151.58:27000/economy')
+            engine = create_engine('mysql://remote:{}@128.120.151.58:27000/economy'.format(password))
             conn = engine.connect()
             metadata = MetaData()
             metadata.reflect(bind=engine)
