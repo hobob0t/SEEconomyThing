@@ -7,6 +7,7 @@ from sqlalchemy import create_engine
 from sqlalchemy import MetaData
 from sqlalchemy import Table
 from sqlalchemy import select, types
+import time
 
 
 def serverName(path):
@@ -111,63 +112,65 @@ def getStore(path):
                     )
     return rows
 
+while True:
+    ls = os.listdir(".")
 
-ls = os.listdir(".")
+    all_stores_data = []
 
-all_stores_data = []
+    for item in ls:
 
-for item in ls:
+        if os.path.isdir(os.path.join(os.path.abspath("."), item)) and 'Expanse' in item:
+            path = os.path.join(os.path.abspath("."), item)
+            sub_dir = os.listdir(path)
 
-    if os.path.isdir(os.path.join(os.path.abspath("."), item)) and 'Expanse' in item:
-        path = os.path.join(os.path.abspath("."), item)
-        sub_dir = os.listdir(path)
+            sub_dir_paths = []
+            for dir in sub_dir:
+                if os.path.isdir(os.path.join(os.path.abspath(path), dir)):
+                    sub_dir_paths.append(os.path.join(os.path.abspath(path), dir))
+            latest_subdir = max(sub_dir_paths, key=os.path.getctime)
+            print("Processing save files in {}".format(latest_subdir))
 
-        sub_dir_paths = []
-        for dir in sub_dir:
-            if os.path.isdir(os.path.join(os.path.abspath(path), dir)):
-                sub_dir_paths.append(os.path.join(os.path.abspath(path), dir))
-        latest_subdir = max(sub_dir_paths, key=os.path.getctime)
-        print(latest_subdir)
+            Server = serverName(latest_subdir)
 
-        Server = serverName(latest_subdir)
+            engine = create_engine('mysql://remote:ghidra@128.120.151.58:27000/economy')
+            conn = engine.connect()
+            metadata = MetaData()
+            metadata.reflect(bind=engine)
 
-        engine = create_engine('mysql://remote:ghidra@128.120.151.58:27000/economy')
-        conn = engine.connect()
-        metadata = MetaData()
-        metadata.reflect(bind=engine)
-
-        serverSQL(Server,conn,metadata)
-
-
-
-        ids = getPlayers(latest_subdir)
-        all_stores_data.append(getStore(latest_subdir))
-
-# Flatten the list
-flat_list = [item for sublist in all_stores_data for item in sublist]
-
-if len(flat_list>0):
-
-    # Make a dataframe
-    df = pd.DataFrame(flat_list)
-
-    dtypes = {
-                "Server": types.TEXT,
-                "Grid Name": types.TEXT,
-                "X": types.FLOAT,
-                "Y": types.FLOAT,
-                "Z": types.FLOAT,
-                "Owner": types.TEXT,
-                "Item": types.TEXT,
-                "Offer or Order": types.TEXT,
-                "Qty": types.FLOAT,
-                "Price per unit": types.FLOAT,
-                'GPS String': types.TEXT
-                }
-
-    # df.to_csv("test.csv")
-    df.to_sql('stores',con=engine,if_exists='replace',dtype=dtypes,chunksize=1000,method = 'multi')
+            serverSQL(Server,conn,metadata)
 
 
-conn.close()
-engine.dispose()
+
+            ids = getPlayers(latest_subdir)
+            all_stores_data.append(getStore(latest_subdir))
+
+    # Flatten the list
+    flat_list = [item for sublist in all_stores_data for item in sublist]
+
+    if len(flat_list)>0:
+
+        # Make a dataframe
+        df = pd.DataFrame(flat_list)
+
+        dtypes = {
+                    "Server": types.TEXT,
+                    "Grid Name": types.TEXT,
+                    "X": types.FLOAT,
+                    "Y": types.FLOAT,
+                    "Z": types.FLOAT,
+                    "Owner": types.TEXT,
+                    "Item": types.TEXT,
+                    "Offer or Order": types.TEXT,
+                    "Qty": types.FLOAT,
+                    "Price per unit": types.FLOAT,
+                    'GPS String': types.TEXT
+                    }
+
+        # df.to_csv("test.csv")
+        df.to_sql('stores',con=engine,if_exists='replace',dtype=dtypes,chunksize=1000,method = 'multi')
+
+
+    conn.close()
+    engine.dispose()
+    print("Waiting 15 minutes....")
+    time.sleep(900)
