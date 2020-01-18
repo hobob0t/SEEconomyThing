@@ -2,7 +2,6 @@
 from lxml import etree as ET  # lxml turns out to be WAY faster than the built in xml parser
 import pandas as pd
 import os
-import time
 from sqlalchemy import create_engine
 from sqlalchemy import MetaData
 from sqlalchemy import Table
