@@ -9,6 +9,7 @@ from sqlalchemy import Table
 from sqlalchemy import select, types
 import time
 
+''''Define functions to be used later:'''
 
 def serverName(path):
     '''Get server name from save file'''
@@ -106,33 +107,36 @@ def getStore(path):
                     )
     return rows
 
-password = input("type password for db and press return or enter.")
+'''End function definitions'''
 
+
+password = input("type password for db and press return or enter.")
+'''Loop forever'''
 while True:
-    ls = os.listdir(".")
-    all_stores_data = []
-    engine = create_engine('mysql://remote:{}@localhost:27000/economy?ssl=true'.format(password))#128.120.151.58
+    ls = os.listdir(".") #Get all the folders in the current directory
+    all_stores_data = [] #initialize list
+    engine = create_engine('mysql://remote:{}@128.120.151.58:27000/economy?ssl=true'.format(password))#128.120.151.58 is hobo's test database
     conn = engine.connect()
     metadata = MetaData()
-    metadata.reflect(bind=engine)
+    metadata.reflect(bind=engine) #Metadata is the information on the schema. Kindof. IDK I'm not a developer
 
-    for item in ls:
+    for item in ls: #For all the folders
 
-        if os.path.isdir(os.path.join(os.path.abspath("."), item)) and 'Expanse' in item:
+        if os.path.isdir(os.path.join(os.path.abspath("."), item)) and 'Expanse' in item: #If the folder name has the word Expanse in it
             path = os.path.join(os.path.abspath("."), item)
-            sub_dir = os.listdir(path)
+            sub_dir = os.listdir(path) #Remember that folder path
 
             sub_dir_paths = []
             for dir in sub_dir:
                 if os.path.isdir(os.path.join(os.path.abspath(path), dir)):
-                    sub_dir_paths.append(os.path.join(os.path.abspath(path), dir))
-            latest_subdir = max(sub_dir_paths, key=os.path.getctime)
+                    sub_dir_paths.append(os.path.join(os.path.abspath(path), dir)) #Get all the save files in that sever folder
+            latest_subdir = max(sub_dir_paths, key=os.path.getctime) #get the newest save file
             print("Processing save files in {}".format(latest_subdir))
 
-            Server = serverName(latest_subdir)
-            serverSQL(Server, conn, metadata)
-            ids = getPlayers(latest_subdir)
-            all_stores_data.append(getStore(latest_subdir))
+            Server = serverName(latest_subdir) #Server name
+            serverSQL(Server, conn, metadata) #Append the server name to the database if it doesn't exist
+            ids = getPlayers(latest_subdir) #Get all the players so we can change IDs into names
+            all_stores_data.append(getStore(latest_subdir)) #Get all the stores and items in that sever
 
     # Flatten the list
     flat_list = [item for sublist in all_stores_data for item in sublist]
@@ -156,7 +160,7 @@ while True:
         }
 
         # df.to_csv("test.csv")
-        df.to_sql('stores', con=engine, if_exists='replace', dtype=dtypes, chunksize=1000, method='multi')
+        df.to_sql('stores', con=engine, if_exists='replace', dtype=dtypes, chunksize=1000, method='multi') #Upload everything to the database
 
     conn.close()
     engine.dispose()
