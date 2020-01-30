@@ -64,7 +64,6 @@ def getStore(path,ids):
             grid_name = grid.find("DisplayName").text  # The grid name
 
             if "PUBLIC" in grid_name:
-
                 stores = grid.findall(".//MyObjectBuilder_CubeBlock[@xsi:type='MyObjectBuilder_StoreBlock']", namespaces)
 
                 position_data = grid.find("PositionAndOrientation").find("Position")  # The position of the grid
@@ -77,7 +76,6 @@ def getStore(path,ids):
                     try:
                         items = items.findall("MyObjectBuilder_StoreItem")  # Get all the items
                         owner = store.find("Owner").text  # Get the ID
-
 
                         # Lookup the ID and change it to a name
                         owner = ids['Name'].loc[ids['ID'] == owner].values[0]
@@ -127,25 +125,26 @@ while True:
     metadata.reflect(bind=engine) #Metadata is the information on the schema. Kindof. IDK I'm not a developer
 
     for item in ls: #For all the folders
-
+        '''OK this part got a little weird, hold on to your butts'''
         if os.path.isdir(os.path.join(os.path.abspath("."), item)) and 'Instance' in item: #If the folder name has the word Instance in it
-            path = os.path.join(os.path.abspath("."), item)
+            path = os.path.join(os.path.abspath("."), item) #Get the absolute path
 
-            path2 = path+"/Instance/Saves"
-            sub_dir = os.listdir(path2) #Remember that folder path
+            path2 = path+"/Instance/Saves" # The saves will always be under /Instance/Saves, so just add that string to the path
+            sub_dir = os.listdir(path2) # list all sub dirs in that path
 
-            sub_dir_paths = []
-            for dir in sub_dir:
-                if os.path.isdir(os.path.join(os.path.abspath(path2), dir)) and "Expanse" in dir:
+            sub_dir_paths = [] # make an empty list
+            for dir in sub_dir: # loop through the subdirectories
+                if os.path.isdir(os.path.join(os.path.abspath(path2), dir)) and "Expanse" in dir: #if it is a folder (as opposed to a file, AND it has the word "Expanse" in it
+
                     sub_dir_paths.append(os.path.join(os.path.abspath(path2), dir)) #Get all the save files in that sever folder
 
-            latest_subdir = max(sub_dir_paths, key=os.path.getctime) #get the newest save file
+            #I don't think this line is needed, but if it's not broken, don't fix it.
+            latest_subdir = max(sub_dir_paths, key=os.path.getctime) # get the newest save folder
 
+            path3 = latest_subdir+"/Backup/" #Head on into the backup folder
+            sub_dir = os.listdir(path3)  # Get the sub directories in the backup folder
 
-            path3 = latest_subdir+"/Backup/"
-            sub_dir = os.listdir(path3)  # Remember that folder path
-
-            sub_dir_paths = []
+            sub_dir_paths = [] #empty list again
             for dir in sub_dir:
                 if os.path.isdir(os.path.join(os.path.abspath(path3), dir)):
                     sub_dir_paths.append(os.path.join(os.path.abspath(path3), dir))  # Get all the save files in that sever folder
