@@ -1,4 +1,4 @@
-# import xml.etree.ElementTree as ET
+#import xml.etree.ElementTree as ET
 from lxml import etree as ET  # lxml turns out to be WAY faster than the built in xml parser
 import pandas as pd
 import os
@@ -49,7 +49,7 @@ def serverSQL(serverName, conn, metadata):
         conn.execute(ins)
 
 
-def getStore(path):
+def getStore(path,ids):
     '''Now parse the other save file for store data'''
     namespaces = {'xsi': 'http://www.w3.org/2001/XMLSchema-instance'}
     tree = ET.parse(path + '/SANDBOX_0_0_0_.sbs')
@@ -62,80 +62,103 @@ def getStore(path):
         if grid.attrib['{http://www.w3.org/2001/XMLSchema-instance}type'] == "MyObjectBuilder_CubeGrid":
 
             grid_name = grid.find("DisplayName").text  # The grid name
-            # blocks = grid.find("CubeBlocks")  # The blocks in the
 
-            # if "PUBLIC" in grid_name:
-            #     continue
-            # else:
-            #     break
+            if "PUBLIC" in grid_name:
 
-            stores = grid.findall(".//MyObjectBuilder_CubeBlock[@xsi:type='MyObjectBuilder_StoreBlock']", namespaces)
+                stores = grid.findall(".//MyObjectBuilder_CubeBlock[@xsi:type='MyObjectBuilder_StoreBlock']", namespaces)
 
-            position_data = grid.find("PositionAndOrientation").find("Position")  # The position of the grid
-            x = position_data.attrib['x']
-            y = position_data.attrib['y']
-            z = position_data.attrib['z']
+                position_data = grid.find("PositionAndOrientation").find("Position")  # The position of the grid
+                x = position_data.attrib['x']
+                y = position_data.attrib['y']
+                z = position_data.attrib['z']
+                for store in stores:
+                    items = store.find("PlayerItems")
 
-            for store in stores:
-                items = store.find("PlayerItems").findall("MyObjectBuilder_StoreItem")  # Get all the items
-                owner = store.find("Owner").text  # Get the ID
+                    try:
+                        items = items.findall("MyObjectBuilder_StoreItem")  # Get all the items
+                        owner = store.find("Owner").text  # Get the ID
 
-                # Lookup the ID and change it to a name
-                owner = ids['Name'].loc[ids['ID'] == owner].values[0]
 
-                for item in items:
-                    item_name = item.find("Item").attrib["Subtype"]  # The item name
-                    item_type = item.find("StoreItemType").text  # Offer or order
-                    price_per_unit = item.find("PricePerUnit").text  # Price per unit
-                    quantity = item.find("Amount").text  # Qty
+                        # Lookup the ID and change it to a name
+                        owner = ids['Name'].loc[ids['ID'] == owner].values[0]
 
-                    # This is a neat trick for making dataframes. It's a list of dictionaries
-                    rows.append({
-                        "Server": Server,
-                        "Grid Name": grid_name,
-                        "X": x,
-                        "Y": y,
-                        "Z": z,
-                        "Owner": owner,
-                        "Item": item_name,
-                        "Offer or Order": item_type,
-                        "Qty": quantity,
-                        "Price per unit": price_per_unit,
-                        'GPS String': 'GPS:' + grid_name + ':' + x + ':' + y + ':' + z + ':'
-                    }
-                    )
+                    except:
+                        items = []
+
+
+                    for item in items:
+                        print(item)
+                        item_name = item.find("Item").attrib["Subtype"]  # The item name
+                        item_type = item.find("StoreItemType").text  # Offer or order
+                        price_per_unit = item.find("PricePerUnit").text  # Price per unit
+                        quantity = item.find("Amount").text  # Qty
+
+
+                        # This is a neat trick for making dataframes. It's a list of dictionaries
+                        rows.append({
+                            "Server": Server,
+                            "Grid Name": grid_name,
+                            "X": x,
+                            "Y": y,
+                            "Z": z,
+                            "Owner": owner,
+                            "Item": item_name,
+                            "Offer or Order": item_type,
+                            "Qty": quantity,
+                            "Price per unit": price_per_unit,
+                            'GPS String': 'GPS:' + grid_name + ':' + x + ':' + y + ':' + z + ':'
+                        }
+                        )
     return rows
 
 '''End function definitions'''
 
 
-password = input("type password for db and press return or enter.")
+#password = input("type password for db and press return or enter.")
+
 '''Loop forever'''
+
 while True:
     ls = os.listdir(".") #Get all the folders in the current directory
     all_stores_data = [] #initialize list
-    engine = create_engine('mysql://remote:{}@128.120.151.58:27000/economy?ssl=true'.format(password))#128.120.151.58 is hobo's test database
+    engine = create_engine(name_or_url='mysql+pymysql://remote:Namaris@128.120.151.58:27000/economy',connect_args={'ssl':{"fake_flag_to_enable_tls":True}})#128.120.151.58 is hobo's test database
     conn = engine.connect()
     metadata = MetaData()
     metadata.reflect(bind=engine) #Metadata is the information on the schema. Kindof. IDK I'm not a developer
 
     for item in ls: #For all the folders
 
-        if os.path.isdir(os.path.join(os.path.abspath("."), item)) and 'Expanse' in item: #If the folder name has the word Expanse in it
+        if os.path.isdir(os.path.join(os.path.abspath("."), item)) and 'Instance' in item: #If the folder name has the word Instance in it
             path = os.path.join(os.path.abspath("."), item)
-            sub_dir = os.listdir(path) #Remember that folder path
+
+            path2 = path+"/Instance/Saves"
+            sub_dir = os.listdir(path2) #Remember that folder path
 
             sub_dir_paths = []
             for dir in sub_dir:
-                if os.path.isdir(os.path.join(os.path.abspath(path), dir)):
-                    sub_dir_paths.append(os.path.join(os.path.abspath(path), dir)) #Get all the save files in that sever folder
+                if os.path.isdir(os.path.join(os.path.abspath(path2), dir)) and "Expanse" in dir:
+                    sub_dir_paths.append(os.path.join(os.path.abspath(path2), dir)) #Get all the save files in that sever folder
+
             latest_subdir = max(sub_dir_paths, key=os.path.getctime) #get the newest save file
+
+
+            path3 = latest_subdir+"/Backup/"
+            sub_dir = os.listdir(path3)  # Remember that folder path
+
+            sub_dir_paths = []
+            for dir in sub_dir:
+                if os.path.isdir(os.path.join(os.path.abspath(path3), dir)):
+                    sub_dir_paths.append(os.path.join(os.path.abspath(path3), dir))  # Get all the save files in that sever folder
+
+            latest_subdir = max(sub_dir_paths, key=os.path.getctime)  # get the newest save file
+
+
             print("Processing save files in {}".format(latest_subdir))
 
             Server = serverName(latest_subdir) #Server name
             serverSQL(Server, conn, metadata) #Append the server name to the database if it doesn't exist
             ids = getPlayers(latest_subdir) #Get all the players so we can change IDs into names
-            all_stores_data.append(getStore(latest_subdir)) #Get all the stores and items in that sever
+            all_stores_data.append(getStore(latest_subdir,ids)) #Get all the stores and items in that sever
 
     # Flatten the list
     flat_list = [item for sublist in all_stores_data for item in sublist]
